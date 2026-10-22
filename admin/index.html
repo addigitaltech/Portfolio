@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Admin | AD Digital Tech</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#050810;color:#f1f5f9;font:16px/1.5 system-ui,sans-serif}
+.w{max-width:960px;margin:0 auto;padding:20px}h1,h2{margin:0 0 12px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #2a3558;border-radius:8px;background:#0d1224;color:#fff;font:inherit;margin-bottom:10px}
+button{border:0;border-radius:8px;padding:10px 16px;background:#4f8ef7;color:#fff;font-weight:600;cursor:pointer}button.g{background:#1b2547}button.d{background:#b42318}
+.card{background:#0d1224;border:1px solid #223060;border-radius:12px;padding:16px;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:8px;margin:12px 0}.m{color:#8493ab;font-size:.85rem}.err{color:#f87171}.ok{color:#34d399}
+</style></head><body><div class="w">
+<div class="row"><h1>AD Digital Tech admin</h1><button class="g" id="out" hidden>Sign out</button></div>
+<p id="msg" class="m" role="status"></p>
+<form id="login" hidden><div class="card"><h2>Sign in</h2><input id="u" placeholder="Username" autocomplete="username" required><input id="p" type="password" placeholder="Password" autocomplete="current-password" required><button>Sign in</button></div></form>
+<div id="app" hidden>
+<div class="tabs"><button id="t1">Posts</button><button class="g" id="t2">Enquiries</button></div>
+<div id="posts"><form id="pf" class="card"><h2 id="pt">New post</h2><input type="hidden" id="pid">
+<input id="ti" placeholder="Title" maxlength="160" required><input id="ca" list="cats" placeholder="Category (e.g. Technology, AI, Software)" maxlength="40"><datalist id="cats"><option>Technology</option><option>AI</option><option>Software</option><option>Education Tech</option><option>Security</option><option>Company</option></datalist>
+<input id="su" placeholder="Short summary (max 300)" maxlength="300" required><textarea id="bo" rows="6" placeholder="Body (plain text)" required></textarea>
+<input id="li" placeholder="Source link (optional, https://...)"><label class="m">Cover image (JPG, PNG or WebP, max 2.5 MB)</label><input type="file" id="fi" accept="image/jpeg,image/png,image/webp"><input type="hidden" id="co"><img id="pv" alt="" hidden style="max-width:240px;border-radius:8px;margin-bottom:10px"><br><label><input type="checkbox" id="pu" style="width:auto"> Published</label> &nbsp; <label><input type="checkbox" id="fe" style="width:auto"> Featured (top story)</label><br><br>
+<button>Save post</button> <button type="button" class="g" id="cl">Clear</button></form><div id="plist"></div></div>
+<div id="enq" hidden></div></div></div>
+<script>
+var csrf='',API='../api/admin.php',$=function(i){return document.getElementById(i)};
+function say(t,c){var m=$('msg');m.textContent=t||'';m.className=c||'m'}
+function call(a,method,data){var o={method:method||'GET',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},credentials:'same-origin'};if(data)o.body=JSON.stringify(data);
+return fetch(API+'?action='+a,o).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Request failed');return j})})}
+function el(t,txt,cls){var e=document.createElement(t);if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e}
+function show(signed){$('login').hidden=signed;$('app').hidden=!signed;$('out').hidden=!signed}
+function pv(p){var i=$('pv');i.hidden=!p;if(p)i.src='../'+p}
+$('fi').onchange=function(){var f=this.files[0];if(!f)return;var fd=new FormData();fd.append('image',f);say('Uploading...');fetch(API+'?action=upload',{method:'POST',headers:{'X-CSRF-Token':csrf},credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Upload failed');return j})}).then(function(j){$('co').value=j.path;pv(j.path);say('Image uploaded.','ok')}).catch(function(x){say(x.message,'err')})};
+function loadPosts(){call('posts').then(function(r){var l=$('plist');l.textContent='';r.posts.forEach(function(p){var c=el('div',null,'card'),h=el('div',null,'row');
+h.appendChild(el('b',p.title));h.appendChild(el('span',(p.is_published=='1'?'Published':'Draft')+' · '+p.category,'m'));c.appendChild(h);c.appendChild(el('p',p.summary,'m'));
+var e=el('button','Edit','g');e.onclick=function(){$('pid').value=p.id;$('ti').value=p.title;$('ca').value=p.category;$('su').value=p.summary;$('bo').value=p.body;$('li').value=p.link_url||'';$('co').value=p.cover_image||'';pv(p.cover_image);$('fe').checked=p.is_featured=='1';$('pu').checked=p.is_published=='1';$('pt').textContent='Edit post';scrollTo(0,0)};
+var d=el('button','Delete','d');d.onclick=function(){if(confirm('Delete this post?'))call('post_delete','POST',{id:+p.id}).then(loadPosts).catch(function(x){say(x.message,'err')})};
+c.appendChild(e);c.appendChild(document.createTextNode(' '));c.appendChild(d);l.appendChild(c)});if(!r.posts.length)l.appendChild(el('p','No posts yet.','m'))}).catch(function(x){say(x.message,'err')})}
+function loadEnq(){call('enquiries').then(function(r){var l=$('enq');l.textContent='';r.enquiries.forEach(function(q){var c=el('div',null,'card'),h=el('div',null,'row');
+h.appendChild(el('b',q.name+' · '+q.project_type));h.appendChild(el('span',q.created_at,'m'));c.appendChild(h);
+c.appendChild(el('p',q.email+' · '+q.phone+(q.organisation?' · '+q.organisation:''),'m'));
+if(q.budget||q.timeframe)c.appendChild(el('p','Budget: '+(q.budget||'-')+' · Timeframe: '+(q.timeframe||'-'),'m'));
+c.appendChild(el('p',q.message));var s=el('select');['new','contacted','closed'].forEach(function(o){var op=el('option',o);op.value=o;if(o===q.status)op.selected=true;s.appendChild(op)});
+s.onchange=function(){call('enquiry_status','POST',{id:+q.id,status:s.value}).catch(function(x){say(x.message,'err')})};c.appendChild(s);l.appendChild(c)});if(!r.enquiries.length)l.appendChild(el('p','No enquiries yet.','m'))}).catch(function(x){say(x.message,'err')})}
+$('t1').onclick=function(){$('posts').hidden=false;$('enq').hidden=true;$('t1').className='';$('t2').className='g'};
+$('t2').onclick=function(){$('posts').hidden=true;$('enq').hidden=false;$('t2').className='';$('t1').className='g';loadEnq()};
+$('login').onsubmit=function(e){e.preventDefault();call('login','POST',{username:$('u').value,password:$('p').value}).then(function(r){csrf=r.csrf;$('p').value='';say('');show(true);loadPosts()}).catch(function(x){say(x.message,'err')})};
+$('out').onclick=function(){call('logout','POST').then(function(){csrf='';show(false)})};
+$('cl').onclick=function(){$('pf').reset();$('pid').value='';$('co').value='';pv('');$('pt').textContent='New post'};
+$('pf').onsubmit=function(e){e.preventDefault();call('post_save','POST',{id:+$('pid').value||0,title:$('ti').value,category:$('ca').value,summary:$('su').value,body:$('bo').value,link_url:$('li').value,cover_image:$('co').value,is_featured:$('fe').checked,is_published:$('pu').checked}).then(function(){say('Saved.','ok');$('cl').click();loadPosts()}).catch(function(x){say(x.message,'err')})};
+call('me').then(function(r){if(r.signedIn){csrf=r.csrf;show(true);loadPosts()}else show(false)}).catch(function(){show(false);say('Cannot reach the server API.','err')});
+</script></body></html>

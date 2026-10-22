@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Technology News | AD Digital Tech Agency</title>
+<meta name="description" content="Technology news and engineering updates from AD Digital Tech Agency.">
+<meta property="og:title" content="Technology News | AD Digital Tech Agency"><meta property="og:type" content="website">
+<meta name="theme-color" content="#050810"><link rel="icon" href="assets/favicon.png">
+<link rel="alternate" type="application/rss+xml" title="AD Digital Tech news" href="api/feed.php">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600">
+<link rel="stylesheet" href="assets/site.css"></head><body>
+<header>
+<div class="w">
+<a href="index.html" aria-label="AD Digital Tech home"><img src="assets/logo.png" alt="AD Digital Tech logo" width="72" height="40"></a>
+<button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+<nav id="nav" aria-label="Main"><ul>
+<li><a href="news.html">News</a></li><li><a href="index.html#services">Services</a></li><li><a href="index.html#work">Our work</a></li><li><a href="index.html#stack">Technology</a></li><li><a href="index.html#process">Process</a></li><li><a href="index.html#security">Security</a></li><li><a href="index.html#about">About</a></li><li><a href="index.html#contact">Contact</a></li>
+</ul></nav>
+</div>
+</header>
+<main class="page"><div class="w">
+<div id="listv"><div class="lab">// technology news</div><div class="rowh"><h1 style="font:800 clamp(2rem,5vw,3.2rem) Syne;letter-spacing:-.03em;margin:0">Technology news</h1><a href="api/feed.php">RSS feed</a></div>
+<div class="filters" id="chips" role="group" aria-label="Filter by category"></div>
+<div class="ng" id="grid"></div><p class="ghost" id="state">Loading...</p>
+<p style="text-align:center"><button class="btn s" id="more" hidden>Load more</button></p></div>
+<article class="art" id="artv" hidden></article>
+</div></main>
+<footer><div class="w">
+<img src="assets/logo.png" alt="AD Digital Tech" width="82" height="46" loading="lazy">
+<p>Engineering Digital Solutions. Building What Matters.</p>
+<p><a href="https://www.addigitaltech.com.ng" rel="noopener">www.addigitaltech.com.ng</a></p>
+<p>© 2026 AD Digital Tech Agency</p>
+</div></footer>
+<script src="assets/news.js"></script>
+<script>
+var Q=new URLSearchParams(location.search),slug=Q.get('s'),cat=Q.get('c')||'',off=0,L=9,A=ADNews,$=function(i){return document.getElementById(i)};
+function api(q){return fetch('api/posts.php?'+q).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'x');return j})})}
+function chips(cs){var c=$('chips');c.textContent='';['']. concat(cs).forEach(function(n){var b=document.createElement('button');b.type='button';b.textContent=n||'All';b.setAttribute('aria-pressed',n===cat);b.onclick=function(){location.search=n?'?c='+encodeURIComponent(n):''};c.appendChild(b)})}
+function list(){$('artv').hidden=true;api('limit='+L+'&offset='+off+(cat?'&category='+encodeURIComponent(cat):'')).then(function(j){
+if(!off)chips(j.categories||[]);var g=$('grid');j.posts.forEach(function(p,i){g.appendChild(A.card(p,!off&&i===0&&!cat))});off+=j.posts.length;
+$('state').textContent=off?'':'No news published yet.';$('more').hidden=off>=j.total}).catch(function(){$('state').textContent='News is unavailable right now. Please try again later.'})}
+function article(){$('listv').hidden=true;var a=$('artv');a.hidden=false;api('slug='+encodeURIComponent(slug)).then(function(j){var p=j.post;document.title=p.title+' | AD Digital Tech';
+var d=document.querySelector('meta[name=description]');if(d)d.content=p.summary;
+var back=A.el('a','\u2190 All news');back.href='news.html';a.appendChild(back);var tg=A.el('div',p.category,'tag');tg.style.marginTop='24px';a.appendChild(tg);a.appendChild(A.el('h1',p.title));
+a.appendChild(A.el('time',A.fmt(p.published_at),'mut'));var im=A.cover(p);if(im)a.appendChild(im);
+String(p.body).split(/\n{2,}/).forEach(function(x){if(x.trim())a.appendChild(A.el('p',x.trim()))});
+if(p.link_url&&/^https?:\/\//i.test(p.link_url)){var l=A.el('a','Read the source','btn p');l.href=p.link_url;l.target='_blank';l.rel='noopener';a.appendChild(l)}}).catch(function(){a.appendChild(A.el('p','This story could not be found.','ghost'));var b=A.el('a','Back to news');b.href='news.html';a.appendChild(b)})}
+$('more').onclick=list;if(slug)article();else list();
+</script></body></html>
