@@ -3,7 +3,13 @@ RewriteEngine On
 # Render terminates HTTPS: redirect only plain-HTTP requests
 RewriteCond %{HTTP:X-Forwarded-Proto} =http
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-<FilesMatch "^(config(\.sample)?\.php|.*\.sql|README\.md|Dockerfile)$">
+RewriteRule ^sitemap\.xml$ api/sitemap.php [L]
+# Clean URLs: /about -> about.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+RewriteRule ^([A-Za-z0-9_-]+)/?$ $1.html [L]
+<FilesMatch "^(config(\.sample)?\.php|content_lib\.php|seed_data\.php|bootstrap\.php|.*\.sql|README\.md|Dockerfile)$">
   Require all denied
 </FilesMatch>
 <IfModule mod_headers.c>

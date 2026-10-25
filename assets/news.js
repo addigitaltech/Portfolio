@@ -1,7 +1,4 @@
 (function(){
-var btn=document.querySelector('.menu'),nav=document.getElementById('nav');
-if(btn&&nav){btn.onclick=function(){var o=nav.classList.toggle('open');btn.setAttribute('aria-expanded',o)};
-nav.addEventListener('click',function(e){if(e.target.tagName==='A'){nav.classList.remove('open');btn.setAttribute('aria-expanded',false)}})}
 function el(t,x,c){var e=document.createElement(t);if(x!=null)e.textContent=x;if(c)e.className=c;return e}
 function fmt(d){if(!d)return '';var t=new Date(String(d).replace(' ','T'));return isNaN(t)?'':t.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
 var OK=/^api\/image\.php\?f=[a-f0-9]{32}\.(jpg|png|webp)$/;

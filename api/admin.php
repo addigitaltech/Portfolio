@@ -2,6 +2,7 @@
 // Admin API (session + CSRF protected). Actions: login, logout, me, posts, post_save, post_delete, enquiries, enquiry_status.
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/content_lib.php';
 start_session();
 
 $action = $_GET['action'] ?? '';
@@ -83,17 +84,95 @@ if ($action === 'post_save' && $method === 'POST') {
 if ($action === 'upload' && $method === 'POST') {
   need_csrf();
   $f = $_FILES['image'] ?? null;
-  if (!$f || ($f['error'] ?? 1) !== UPLOAD_ERR_OK) json_out(['error' => 'Upload failed.'], 422);
-  if ($f['size'] > 2500000) json_out(['error' => 'Image must be under 2.5 MB.'], 422);
+  if (!$f || ($f['error'] ?? 1) !== UPLOAD_ERR_OK) json_out(['error' => 'Upload failed. The image may be too large.'], 422);
+  if ($f['size'] > 8000000) json_out(['error' => 'Image must be under 8 MB.'], 422);
   $info = @getimagesize($f['tmp_name']);
-  $map = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-  if (!$info || !isset($map[$info['mime']])) json_out(['error' => 'Use a JPG, PNG or WebP image.'], 422);
-  $name = bin2hex(random_bytes(16)) . '.' . $map[$info['mime']];
-  $fh = fopen($f['tmp_name'], 'rb');
+  $ok = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!$info || !in_array($info['mime'], $ok, true)) json_out(['error' => 'Use a JPG, PNG or WebP image.'], 422);
+  if ($info[0] * $info[1] > 40000000) json_out(['error' => 'Image dimensions are too large.'], 422);
+  [$bytes, $mime] = process_image($f['tmp_name'], $info['mime']);
+  $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$mime];
+  $name = bin2hex(random_bytes(16)) . '.' . $ext;
+  $fh = fopen('php://temp', 'r+'); fwrite($fh, $bytes); rewind($fh);
   $st = db()->prepare('INSERT INTO images (name, mime, data) VALUES (?, ?, ?)');
-  $st->bindValue(1, $name); $st->bindValue(2, $info['mime']); $st->bindParam(3, $fh, PDO::PARAM_LOB);
+  $st->bindValue(1, $name); $st->bindValue(2, $mime); $st->bindParam(3, $fh, PDO::PARAM_LOB);
   $st->execute();
   json_out(['ok' => true, 'path' => 'api/image.php?f=' . $name]);
+}
+
+if ($action === 'schema' && $method === 'GET') {
+  json_out(['schema' => content_schema()]);
+}
+
+if ($action === 'settings_get' && $method === 'GET') {
+  json_out(['settings' => settings_all()]);
+}
+
+if ($action === 'settings_save' && $method === 'POST') {
+  need_csrf();
+  $in = (array)(body()['values'] ?? []);
+  try {
+    foreach (content_schema()['settings'] as $fields) foreach ($fields as $f) {
+      if (!array_key_exists($f['k'], $in)) continue;
+      $v = clean_field($f, $in[$f['k']]);
+      upsert_setting($f['k'], is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : (string)$v);
+    }
+  } catch (InvalidArgumentException $e) { json_out(['error' => $e->getMessage()], 422); }
+  json_out(['ok' => true]);
+}
+
+if ($action === 'entries' && $method === 'GET') {
+  $c = clean($_GET['c'] ?? '', 30);
+  if (!isset(content_schema()['collections'][$c])) json_out(['error' => 'Unknown section.'], 404);
+  $st = db()->prepare('SELECT id, slug, data, sort_order, is_published FROM entries WHERE collection=? ORDER BY sort_order, id');
+  $st->execute([$c]);
+  $rows = array_map(fn($r) => ['id' => (int)$r['id'], 'slug' => $r['slug'], 'is_published' => (int)$r['is_published'], 'data' => json_decode((string)$r['data'], true) ?: []], $st->fetchAll());
+  json_out(['entries' => $rows]);
+}
+
+if ($action === 'entry_save' && $method === 'POST') {
+  need_csrf();
+  $d = body();
+  $c = clean($d['c'] ?? '', 30);
+  $def = content_schema()['collections'][$c] ?? null;
+  if (!$def) json_out(['error' => 'Unknown section.'], 404);
+  try { $data = validate_fields($def['fields'], (array)($d['data'] ?? [])); }
+  catch (InvalidArgumentException $e) { json_out(['error' => $e->getMessage()], 422); }
+  $pub = !empty($d['is_published']) ? 1 : 0;
+  $id = (int)($d['id'] ?? 0);
+  if ($id > 0) {
+    $st = db()->prepare('UPDATE entries SET data=?, is_published=?, updated_at=NOW() WHERE id=? AND collection=?');
+    $st->execute([json_encode($data, JSON_UNESCAPED_UNICODE), $pub, $id, $c]);
+  } else {
+    $id = insert_entry($c, $data, $pub);
+  }
+  json_out(['ok' => true, 'id' => $id]);
+}
+
+if ($action === 'entry_delete' && $method === 'POST') {
+  need_csrf();
+  $d = body();
+  db()->prepare('DELETE FROM entries WHERE id=? AND collection=?')->execute([(int)($d['id'] ?? 0), clean($d['c'] ?? '', 30)]);
+  json_out(['ok' => true]);
+}
+
+if ($action === 'entry_move' && $method === 'POST') {
+  need_csrf();
+  $d = body(); $c = clean($d['c'] ?? '', 30); $id = (int)($d['id'] ?? 0); $dir = ($d['dir'] ?? '') === 'up' ? -1 : 1;
+  $st = db()->prepare('SELECT id FROM entries WHERE collection=? ORDER BY sort_order, id');
+  $st->execute([$c]);
+  $ids = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
+  $i = array_search($id, $ids, true);
+  if ($i === false || !isset($ids[$i + $dir])) json_out(['ok' => true]);
+  [$ids[$i], $ids[$i + $dir]] = [$ids[$i + $dir], $ids[$i]];
+  $u = db()->prepare('UPDATE entries SET sort_order=? WHERE id=?');
+  foreach ($ids as $n => $eid) $u->execute([($n + 1) * 10, $eid]);
+  json_out(['ok' => true]);
+}
+
+if ($action === 'seed' && $method === 'POST') {
+  need_csrf();
+  json_out(['ok' => true, 'filled' => seed_if_empty()]);
 }
 
 if ($action === 'post_delete' && $method === 'POST') {
@@ -104,7 +183,7 @@ if ($action === 'post_delete' && $method === 'POST') {
 }
 
 if ($action === 'enquiries' && $method === 'GET') {
-  json_out(['enquiries' => db()->query('SELECT id, name, email, phone, organisation, project_type, budget, timeframe, message, status, ' . iso('created_at') . ' AS created_at FROM enquiries ORDER BY id DESC LIMIT 200')->fetchAll()]);
+  json_out(['enquiries' => db()->query('SELECT id, name, email, phone, organisation, project_type, budget, timeframe, contact_method, message, status, ' . iso('created_at') . ' AS created_at FROM enquiries ORDER BY id DESC LIMIT 200')->fetchAll()]);
 }
 
 if ($action === 'enquiry_status' && $method === 'POST') {
@@ -116,3 +195,24 @@ if ($action === 'enquiry_status' && $method === 'POST') {
 }
 
 json_out(['error' => 'Not found.'], 404);
+
+function process_image(string $tmp, string $mime): array {
+  $raw = (string)file_get_contents($tmp);
+  if (!function_exists('imagecreatefromstring')) return [$raw, $mime];
+  $im = @imagecreatefromstring($raw);
+  if (!$im) return [$raw, $mime];
+  if (!imageistruecolor($im)) imagepalettetotruecolor($im);
+  $w = imagesx($im); $h = imagesy($im); $max = 1800;
+  if ($w > $max) {
+    $nh = (int)round($h * $max / $w);
+    $r = imagecreatetruecolor($max, $nh);
+    imagealphablending($r, false); imagesavealpha($r, true);
+    imagecopyresampled($r, $im, 0, 0, 0, 0, $max, $nh, $w, $h);
+    imagedestroy($im); $im = $r;
+  } else { imagealphablending($im, false); imagesavealpha($im, true); }
+  ob_start();
+  if (function_exists('imagewebp')) { imagewebp($im, null, 85); $out = ob_get_clean(); $m = 'image/webp'; }
+  else { imagepng($im, null, 6); $out = ob_get_clean(); $m = 'image/png'; }
+  imagedestroy($im);
+  return ($out !== false && $out !== '') ? [$out, $m] : [$raw, $mime];
+}

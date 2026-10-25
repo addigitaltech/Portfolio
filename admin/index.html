@@ -2,50 +2,89 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>Admin | AD Digital Tech</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#050810;color:#f1f5f9;font:16px/1.5 system-ui,sans-serif}
-.w{max-width:960px;margin:0 auto;padding:20px}h1,h2{margin:0 0 12px}
-input,select,textarea{width:100%;padding:10px;border:1px solid #2a3558;border-radius:8px;background:#0d1224;color:#fff;font:inherit;margin-bottom:10px}
-button{border:0;border-radius:8px;padding:10px 16px;background:#4f8ef7;color:#fff;font-weight:600;cursor:pointer}button.g{background:#1b2547}button.d{background:#b42318}
-.card{background:#0d1224;border:1px solid #223060;border-radius:12px;padding:16px;margin-bottom:12px}
+*{box-sizing:border-box}body{margin:0;background:#f4f7fc;color:#0b1b3a;font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+.w{max-width:980px;margin:0 auto;padding:16px}h1{font-size:1.4rem;margin:0}h2{font-size:1.2rem;margin:0 0 10px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
+button,.b{border:1px solid #c9d3e6;border-radius:8px;padding:9px 14px;background:#fff;color:#0b1b3a;font:600 .9rem inherit;cursor:pointer}
+button.p{background:#1e6bff;border-color:#1e6bff;color:#fff}button.d{background:#b42318;border-color:#b42318;color:#fff}button.on{background:#0a1f44;color:#fff;border-color:#0a1f44}
+button:disabled{opacity:.6}
+.card{background:#fff;border:1px solid #dde3ee;border-radius:10px;padding:16px;margin-bottom:12px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-.tabs{display:flex;gap:8px;margin:12px 0}.m{color:#8493ab;font-size:.85rem}.err{color:#f87171}.ok{color:#34d399}
+label{display:block;font-weight:600;font-size:.88rem;margin:10px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #c9d3e6;border-radius:8px;font:inherit;background:#fff}
+input[type=checkbox]{width:auto}textarea{min-height:90px}
+fieldset{border:1px solid #dde3ee;border-radius:10px;margin:0 0 14px;padding:6px 14px 14px;background:#fff}legend{font-weight:700;padding:0 6px}
+.m{color:#55627a;font-size:.85rem}.err{color:#b42318}.ok{color:#0b6b3a}
+.th{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.th div{position:relative}.th img{width:110px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #dde3ee;display:block}
+.th button{position:absolute;top:2px;right:2px;padding:0 7px;font-size:.9rem}
+#msg{position:sticky;top:0;z-index:5;padding:8px 0;min-height:1.6em}
 </style></head><body><div class="w">
-<div class="row"><h1>AD Digital Tech admin</h1><button class="g" id="out" hidden>Sign out</button></div>
-<p id="msg" class="m" role="status"></p>
-<form id="login" hidden><div class="card"><h2>Sign in</h2><input id="u" placeholder="Username" autocomplete="username" required><input id="p" type="password" placeholder="Password" autocomplete="current-password" required><button>Sign in</button></div></form>
-<div id="app" hidden>
-<div class="tabs"><button id="t1">Posts</button><button class="g" id="t2">Enquiries</button></div>
-<div id="posts"><form id="pf" class="card"><h2 id="pt">New post</h2><input type="hidden" id="pid">
-<input id="ti" placeholder="Title" maxlength="160" required><input id="ca" list="cats" placeholder="Category (e.g. Technology, AI, Software)" maxlength="40"><datalist id="cats"><option>Technology</option><option>AI</option><option>Software</option><option>Education Tech</option><option>Security</option><option>Company</option></datalist>
-<input id="su" placeholder="Short summary (max 300)" maxlength="300" required><textarea id="bo" rows="6" placeholder="Body (plain text)" required></textarea>
-<input id="li" placeholder="Source link (optional, https://...)"><label class="m">Cover image (JPG, PNG or WebP, max 2.5 MB)</label><input type="file" id="fi" accept="image/jpeg,image/png,image/webp"><input type="hidden" id="co"><img id="pv" alt="" hidden style="max-width:240px;border-radius:8px;margin-bottom:10px"><br><label><input type="checkbox" id="pu" style="width:auto"> Published</label> &nbsp; <label><input type="checkbox" id="fe" style="width:auto"> Featured (top story)</label><br><br>
-<button>Save post</button> <button type="button" class="g" id="cl">Clear</button></form><div id="plist"></div></div>
-<div id="enq" hidden></div></div></div>
+<div class="top"><h1>AD Digital Tech: content manager</h1><div><a class="b" href="../" target="_blank" rel="noopener" id="vs" hidden>View website</a> <button id="out" hidden>Sign out</button></div></div>
+<div id="msg" class="m" role="status" aria-live="polite"></div>
+<form id="login" hidden><div class="card"><h2>Sign in</h2><label for="u">Username</label><input id="u" autocomplete="username" required><label for="p">Password</label><input id="p" type="password" autocomplete="current-password" required><p><button class="p">Sign in</button></p></div></form>
+<div id="app" hidden><div class="tabs" id="tabs"></div><div id="view"></div></div>
+</div>
 <script>
-var csrf='',API='../api/admin.php',$=function(i){return document.getElementById(i)};
+var csrf='',API='../api/admin.php',SC=null,$=function(i){return document.getElementById(i)};
 function say(t,c){var m=$('msg');m.textContent=t||'';m.className=c||'m'}
 function call(a,method,data){var o={method:method||'GET',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},credentials:'same-origin'};if(data)o.body=JSON.stringify(data);
 return fetch(API+'?action='+a,o).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Request failed');return j})})}
-function el(t,txt,cls){var e=document.createElement(t);if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e}
-function show(signed){$('login').hidden=signed;$('app').hidden=!signed;$('out').hidden=!signed}
-function pv(p){var i=$('pv');i.hidden=!p;if(p)i.src='../'+p}
-$('fi').onchange=function(){var f=this.files[0];if(!f)return;var fd=new FormData();fd.append('image',f);say('Uploading...');fetch(API+'?action=upload',{method:'POST',headers:{'X-CSRF-Token':csrf},credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Upload failed');return j})}).then(function(j){$('co').value=j.path;pv(j.path);say('Image uploaded.','ok')}).catch(function(x){say(x.message,'err')})};
-function loadPosts(){call('posts').then(function(r){var l=$('plist');l.textContent='';r.posts.forEach(function(p){var c=el('div',null,'card'),h=el('div',null,'row');
-h.appendChild(el('b',p.title));h.appendChild(el('span',(p.is_published=='1'?'Published':'Draft')+' · '+p.category,'m'));c.appendChild(h);c.appendChild(el('p',p.summary,'m'));
-var e=el('button','Edit','g');e.onclick=function(){$('pid').value=p.id;$('ti').value=p.title;$('ca').value=p.category;$('su').value=p.summary;$('bo').value=p.body;$('li').value=p.link_url||'';$('co').value=p.cover_image||'';pv(p.cover_image);$('fe').checked=p.is_featured=='1';$('pu').checked=p.is_published=='1';$('pt').textContent='Edit post';scrollTo(0,0)};
-var d=el('button','Delete','d');d.onclick=function(){if(confirm('Delete this post?'))call('post_delete','POST',{id:+p.id}).then(loadPosts).catch(function(x){say(x.message,'err')})};
-c.appendChild(e);c.appendChild(document.createTextNode(' '));c.appendChild(d);l.appendChild(c)});if(!r.posts.length)l.appendChild(el('p','No posts yet.','m'))}).catch(function(x){say(x.message,'err')})}
-function loadEnq(){call('enquiries').then(function(r){var l=$('enq');l.textContent='';r.enquiries.forEach(function(q){var c=el('div',null,'card'),h=el('div',null,'row');
-h.appendChild(el('b',q.name+' · '+q.project_type));h.appendChild(el('span',q.created_at,'m'));c.appendChild(h);
-c.appendChild(el('p',q.email+' · '+q.phone+(q.organisation?' · '+q.organisation:''),'m'));
-if(q.budget||q.timeframe)c.appendChild(el('p','Budget: '+(q.budget||'-')+' · Timeframe: '+(q.timeframe||'-'),'m'));
-c.appendChild(el('p',q.message));var s=el('select');['new','contacted','closed'].forEach(function(o){var op=el('option',o);op.value=o;if(o===q.status)op.selected=true;s.appendChild(op)});
-s.onchange=function(){call('enquiry_status','POST',{id:+q.id,status:s.value}).catch(function(x){say(x.message,'err')})};c.appendChild(s);l.appendChild(c)});if(!r.enquiries.length)l.appendChild(el('p','No enquiries yet.','m'))}).catch(function(x){say(x.message,'err')})}
-$('t1').onclick=function(){$('posts').hidden=false;$('enq').hidden=true;$('t1').className='';$('t2').className='g'};
-$('t2').onclick=function(){$('posts').hidden=true;$('enq').hidden=false;$('t2').className='';$('t1').className='g';loadEnq()};
-$('login').onsubmit=function(e){e.preventDefault();call('login','POST',{username:$('u').value,password:$('p').value}).then(function(r){csrf=r.csrf;$('p').value='';say('');show(true);loadPosts()}).catch(function(x){say(x.message,'err')})};
-$('out').onclick=function(){call('logout','POST').then(function(){csrf='';show(false)})};
-$('cl').onclick=function(){$('pf').reset();$('pid').value='';$('co').value='';pv('');$('pt').textContent='New post'};
-$('pf').onsubmit=function(e){e.preventDefault();call('post_save','POST',{id:+$('pid').value||0,title:$('ti').value,category:$('ca').value,summary:$('su').value,body:$('bo').value,link_url:$('li').value,cover_image:$('co').value,is_featured:$('fe').checked,is_published:$('pu').checked}).then(function(){say('Saved.','ok');$('cl').click();loadPosts()}).catch(function(x){say(x.message,'err')})};
-call('me').then(function(r){if(r.signedIn){csrf=r.csrf;show(true);loadPosts()}else show(false)}).catch(function(){show(false);say('Cannot reach the server API.','err')});
+function el(t,x,c,a){var e=document.createElement(t);if(x!=null)e.textContent=x;if(c)e.className=c;for(var k in(a||{}))e.setAttribute(k,a[k]);return e}
+function upload(file){var fd=new FormData();fd.append('image',file);say('Uploading and optimising image...');return fetch(API+'?action=upload',{method:'POST',headers:{'X-CSRF-Token':csrf},credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Upload failed');say('Image uploaded.','ok');return j.path})})}
+function thumb(p,onx){var d=el('div'),i=el('img');i.src='../'+p;i.alt='';d.appendChild(i);var b=el('button','\u00d7');b.type='button';b.title='Remove';b.onclick=onx;d.appendChild(b);return d}
+// Build a form from field definitions. Returns {root,get}
+function buildForm(fields,vals){var root=el('div'),getters={};
+fields.forEach(function(f){var v=vals[f.k];if(v==null||v===''||(Array.isArray(v)&&!v.length&&f.t!=='lines'))v=(f.t==='bool'?0:(vals.__def?'':''));
+var wrap=el('div'),id='f_'+f.k;
+if(f.t==='bool'){var cb=el('input',null,null,{type:'checkbox',id:id});cb.checked=!!+vals[f.k];var l=el('label',' '+f.l,null,{'for':id});l.insertBefore(cb,l.firstChild);wrap.appendChild(l);getters[f.k]=function(){return cb.checked?1:0}}
+else{wrap.appendChild(el('label',f.l+(f.req?' *':''),null,{'for':id}));
+if(f.t==='textarea'||f.t==='lines'){var ta=el('textarea',null,null,{id:id});var cur=vals[f.k];ta.value=Array.isArray(cur)?cur.join('\n'):(cur||'');if(f.def&&!cur)ta.placeholder=Array.isArray(f.def)?f.def.join('\n'):f.def;getters[f.k]=function(){return ta.value};wrap.appendChild(ta)}
+else if(f.t==='select'){var s=el('select',null,null,{id:id});s.appendChild(el('option','(not set)'));s.firstChild.value='';f.options.forEach(function(o){var op=el('option',o);op.value=o;s.appendChild(op)});s.value=vals[f.k]||f.def||'';getters[f.k]=function(){return s.value};wrap.appendChild(s)}
+else if(f.t==='image'){var cur2=vals[f.k]||'',box=el('div','','th'),hold=el('input',null,null,{type:'hidden'}),fi=el('input',null,null,{type:'file',accept:'image/jpeg,image/png,image/webp'});
+function draw(){box.textContent='';if(hold.value)box.appendChild(thumb(hold.value,function(){hold.value='';draw()}))}hold.value=cur2;draw();
+fi.onchange=function(){if(fi.files[0])upload(fi.files[0]).then(function(p){hold.value=p;draw();fi.value=''}).catch(function(x){say(x.message,'err')})};
+getters[f.k]=function(){return hold.value};wrap.appendChild(box);wrap.appendChild(fi);if(f.def&&!cur2)wrap.appendChild(el('div','Default image in use until you upload one.','m'))}
+else if(f.t==='images'){var list=(vals[f.k]||[]).slice(),box2=el('div','','th'),fi2=el('input',null,null,{type:'file',accept:'image/jpeg,image/png,image/webp',multiple:'multiple'});
+function draw2(){box2.textContent='';list.forEach(function(p,i){box2.appendChild(thumb(p,function(){list.splice(i,1);draw2()}))})}draw2();
+fi2.onchange=function(){var fs=Array.prototype.slice.call(fi2.files);fs.reduce(function(pr,file){return pr.then(function(){return upload(file).then(function(p){list.push(p);draw2()})})},Promise.resolve()).catch(function(x){say(x.message,'err')});fi2.value=''};
+getters[f.k]=function(){return list};wrap.appendChild(box2);wrap.appendChild(fi2)}
+else{var inp=el('input',null,null,{id:id,type:'text'});inp.value=vals[f.k]||'';if(f.def&&!vals[f.k])inp.placeholder=f.def;getters[f.k]=function(){return inp.value};wrap.appendChild(inp)}}
+root.appendChild(wrap)});
+return{root:root,get:function(){var o={};for(var k in getters)o[k]=getters[k]();return o}}}
+function tabs(active){var t=$('tabs');t.textContent='';var items=[['settings','Site settings']];Object.keys(SC.collections).forEach(function(k){items.push([k,SC.collections[k].label])});items.push(['news','News posts'],['enq','Enquiries']);
+items.forEach(function(i){var b=el('button',i[1],i[0]===active?'on':'');b.onclick=function(){show(i[0])};t.appendChild(b)})}
+function show(s){say('');tabs(s);var v=$('view');v.textContent='';if(s==='settings')viewSettings(v);else if(s==='news')viewNews(v);else if(s==='enq')viewEnq(v);else viewColl(v,s)}
+function viewSettings(v){call('settings_get').then(function(r){var forms=[];Object.keys(SC.settings).forEach(function(g){var fs=el('fieldset');fs.appendChild(el('legend',g));var f=buildForm(SC.settings[g],r.settings);forms.push(f);fs.appendChild(f.root);v.appendChild(fs)});
+var b=el('button','Save all settings','p');b.onclick=function(){var vals={};forms.forEach(function(f){var o=f.get();for(var k in o)vals[k]=o[k]});b.disabled=true;call('settings_save','POST',{values:vals}).then(function(){say('Settings saved. Refresh the website to see them.','ok')}).catch(function(x){say(x.message,'err')}).then(function(){b.disabled=false})};v.appendChild(b)}).catch(function(x){say(x.message,'err')})}
+function viewColl(v,c){var def=SC.collections[c];v.appendChild(el('h2',def.label));var top=el('div','','row'),add=el('button','Add '+def.one,'p');top.appendChild(add);var sd=el('button','Load starter content');sd.title='Fills empty sections with starter text you can edit';sd.onclick=function(){call('seed','POST').then(function(r){say(r.filled.length?'Starter content added.':'Nothing to add: sections already have content.','ok');show(c)}).catch(function(x){say(x.message,'err')})};top.appendChild(sd);v.appendChild(top);
+var list=el('div');v.appendChild(list);
+function edit(en){list.textContent='';top.hidden=true;var f=buildForm(def.fields,en?en.data:{}),card=el('div','','card');card.appendChild(el('h2',en?'Edit '+def.one:'New '+def.one));card.appendChild(f.root);
+var pc=el('input',null,null,{type:'checkbox',id:'pub'});pc.checked=en?!!en.is_published:true;var pl=el('label',' Published (visible on the website; untick to save as a draft)',null,{'for':'pub'});pl.insertBefore(pc,pl.firstChild);card.appendChild(pl);
+var sv=el('button','Save','p'),cn=el('button','Cancel');cn.onclick=function(){top.hidden=false;load()};
+sv.onclick=function(){sv.disabled=true;call('entry_save','POST',{c:c,id:en?en.id:0,data:f.get(),is_published:pc.checked}).then(function(){say('Saved.','ok');top.hidden=false;load()}).catch(function(x){say(x.message,'err');sv.disabled=false})};
+card.appendChild(el('p'));card.appendChild(sv);card.appendChild(document.createTextNode(' '));card.appendChild(cn);list.appendChild(card);scrollTo(0,0)}
+function load(){fetch(API+'?action=entries&c='+encodeURIComponent(c),{credentials:'same-origin'}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error);return j})}).then(function(r){list.textContent='';
+if(!r.entries.length)list.appendChild(el('p','Nothing here yet. Click "Add '+def.one+'" or "Load starter content".','m'));
+r.entries.forEach(function(en){var card=el('div','','card'),row=el('div','','row'),t=en.data[def.title]||'(untitled)';row.appendChild(el('b',t));row.appendChild(el('span',en.is_published?'Published':'Draft','m'));card.appendChild(row);
+var bar=el('div');[['Edit',function(){edit(en)}],['Move up',function(){mv(en,'up')}],['Move down',function(){mv(en,'down')}],[en.is_published?'Unpublish':'Publish',function(){call('entry_save','POST',{c:c,id:en.id,data:en.data,is_published:!en.is_published}).then(load).catch(function(x){say(x.message,'err')})}]].forEach(function(a){var b=el('button',a[0]);b.onclick=a[1];bar.appendChild(b);bar.appendChild(document.createTextNode(' '))});
+var d=el('button','Delete','d');d.onclick=function(){if(confirm('Delete "'+t+'"? This cannot be undone.'))call('entry_delete','POST',{c:c,id:en.id}).then(load).catch(function(x){say(x.message,'err')})};bar.appendChild(d);card.appendChild(bar);list.appendChild(card)})}).catch(function(x){say(x.message,'err')})}
+function mv(en,dir){call('entry_move','POST',{c:c,id:en.id,dir:dir}).then(load).catch(function(x){say(x.message,'err')})}
+add.onclick=function(){edit(null)};load()}
+function viewNews(v){v.appendChild(el('h2','News posts'));var fields=[{k:'title',l:'Title',t:'text',req:1},{k:'category',l:'Category (e.g. Technology, AI, Software)',t:'text'},{k:'summary',l:'Short summary (max 300)',t:'textarea'},{k:'body',l:'Story (blank line between paragraphs)',t:'textarea'},{k:'link_url',l:'Source link (optional)',t:'url'},{k:'cover_image',l:'Cover image',t:'image'}];
+var f=buildForm(fields,{}),card=el('div','','card'),pid=0;card.appendChild(f.root);
+var pc=el('input',null,null,{type:'checkbox'}),fc=el('input',null,null,{type:'checkbox'});var l1=el('label',' Published');l1.insertBefore(pc,l1.firstChild);var l2=el('label',' Featured (top story)');l2.insertBefore(fc,l2.firstChild);card.appendChild(l1);card.appendChild(l2);
+var sv=el('button','Save post','p');card.appendChild(sv);v.appendChild(card);var list=el('div');v.appendChild(list);
+sv.onclick=function(){var o=f.get();call('post_save','POST',{id:pid,title:o.title,category:o.category,summary:o.summary,body:o.body,link_url:o.link_url,cover_image:o.cover_image,is_published:pc.checked,is_featured:fc.checked}).then(function(){say('Post saved.','ok');show('news')}).catch(function(x){say(x.message,'err')})};
+call('posts').then(function(r){r.posts.forEach(function(p){var c=el('div','','card'),row=el('div','','row');row.appendChild(el('b',p.title));row.appendChild(el('span',(+p.is_published?'Published':'Draft')+' \u00b7 '+p.category,'m'));c.appendChild(row);
+var e=el('button','Edit');e.onclick=function(){pid=+p.id;show2(p)};var d=el('button','Delete','d');d.onclick=function(){if(confirm('Delete this post?'))call('post_delete','POST',{id:+p.id}).then(function(){show('news')}).catch(function(x){say(x.message,'err')})};c.appendChild(e);c.appendChild(document.createTextNode(' '));c.appendChild(d);list.appendChild(c)});
+function show2(p){var vv=$('view');vv.textContent='';vv.appendChild(el('h2','Edit post'));var f2=buildForm(fields,p),c2=el('div','','card');c2.appendChild(f2.root);var a=el('input',null,null,{type:'checkbox'});a.checked=!!+p.is_published;var b=el('input',null,null,{type:'checkbox'});b.checked=!!+p.is_featured;var la=el('label',' Published');la.insertBefore(a,la.firstChild);var lb=el('label',' Featured (top story)');lb.insertBefore(b,lb.firstChild);c2.appendChild(la);c2.appendChild(lb);
+var s2=el('button','Save post','p');s2.onclick=function(){var o=f2.get();call('post_save','POST',{id:pid,title:o.title,category:o.category,summary:o.summary,body:o.body,link_url:o.link_url,cover_image:o.cover_image,is_published:a.checked,is_featured:b.checked}).then(function(){say('Post saved.','ok');show('news')}).catch(function(x){say(x.message,'err')})};c2.appendChild(s2);vv.appendChild(c2)}}).catch(function(x){say(x.message,'err')})}
+function viewEnq(v){v.appendChild(el('h2','Project enquiries'));call('enquiries').then(function(r){if(!r.enquiries.length)v.appendChild(el('p','No enquiries yet.','m'));r.enquiries.forEach(function(q){var c=el('div','','card'),row=el('div','','row');row.appendChild(el('b',q.name+' \u00b7 '+q.project_type));row.appendChild(el('span',q.created_at,'m'));c.appendChild(row);
+c.appendChild(el('p',q.email+' \u00b7 '+q.phone+(q.organisation?' \u00b7 '+q.organisation:'')+(q.contact_method?' \u00b7 prefers '+q.contact_method:''),'m'));if(q.budget||q.timeframe)c.appendChild(el('p','Budget: '+(q.budget||'-')+' \u00b7 Timeframe: '+(q.timeframe||'-'),'m'));c.appendChild(el('p',q.message));
+var s=el('select');['new','contacted','closed'].forEach(function(o){var op=el('option',o);op.value=o;if(o===q.status)op.selected=true;s.appendChild(op)});s.onchange=function(){call('enquiry_status','POST',{id:+q.id,status:s.value}).catch(function(x){say(x.message,'err')})};c.appendChild(s);v.appendChild(c)})}).catch(function(x){say(x.message,'err')})}
+function ready(){call('schema').then(function(r){SC=r.schema;$('login').hidden=true;$('app').hidden=false;$('out').hidden=false;$('vs').hidden=false;show('settings')}).catch(function(x){say(x.message,'err')})}
+$('login').onsubmit=function(e){e.preventDefault();call('login','POST',{username:$('u').value,password:$('p').value}).then(function(r){csrf=r.csrf;$('p').value='';say('');ready()}).catch(function(x){say(x.message,'err')})};
+$('out').onclick=function(){call('logout','POST').then(function(){location.reload()})};
+call('me').then(function(r){if(r.signedIn){csrf=r.csrf;ready()}else $('login').hidden=false}).catch(function(){$('login').hidden=false;say('Cannot reach the server API.','err')});
 </script></body></html>

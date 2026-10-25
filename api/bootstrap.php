@@ -16,10 +16,10 @@ function db(): PDO {
   return $pdo;
 }
 
-function json_out(array $data, int $code = 200): never {
+function json_out(array $data, int $code = 200, string $cache = 'no-store'): never {
   http_response_code($code);
   header('Content-Type: application/json; charset=utf-8');
-  header('Cache-Control: no-store');
+  header('Cache-Control: ' . $cache);
   header('X-Content-Type-Options: nosniff');
   echo json_encode($data, JSON_UNESCAPED_UNICODE);
   exit;
@@ -67,4 +67,13 @@ function start_session(): void {
   session_name('adt_admin');
   session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => $https, 'httponly' => true, 'samesite' => 'Strict']);
   session_start();
+}
+
+function base_url(): string {
+  $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+  return ($https ? 'https://' : 'http://') . preg_replace('/[^A-Za-z0-9.\-:]/', '', $_SERVER['HTTP_HOST'] ?? 'localhost');
+}
+
+function upsert_setting(string $k, string $v): void {
+  db()->prepare('INSERT INTO settings (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = EXCLUDED.v')->execute([$k, $v]);
 }

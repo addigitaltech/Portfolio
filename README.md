@@ -1,22 +1,21 @@
-# AD Digital Tech website (Render + Neon)
+# AD Digital Tech Agency: corporate website (Render + Neon)
 
-PHP 8.3 + Apache in Docker, PostgreSQL on Neon. Deployed as one Render Web Service.
+PHP 8.3 + Apache in Docker, PostgreSQL on Neon. One Render Web Service.
 
 ## Environment variables (set in Render, never commit)
-- `DATABASE_URL`: Neon connection string (`postgresql://...?sslmode=require`)
-- `APP_SECRET`: random string, 16+ characters
-- `SETUP_KEY`: random string, 16+ characters, used once by `api/setup_admin.php`
-- `NOTIFY_EMAIL`, `MAIL_FROM`: optional (see note on email below)
+`DATABASE_URL`, `APP_SECRET` (16+ chars), `SETUP_KEY` (16+ chars, used once), optional `NOTIFY_EMAIL`, `MAIL_FROM`.
+
+## Database
+Run `sql/db_setup.sql` on Neon. It only adds tables and columns and never deletes data.
 
 ## First run
-1. Run `sql/db_setup.sql` on the Neon database.
-2. Open `/api/setup_admin.php`, enter the setup key, create the admin (12+ character password).
-3. Remove `SETUP_KEY` from Render, delete `api/setup_admin.php` from the repo, redeploy.
-4. Sign in at `/admin/`. Publish a post to show the news section.
-5. Set `CONFIG.whatsapp` in `index.html` to show the WhatsApp button.
+1. Open `/api/setup_admin.php`, enter the setup key, create the admin (12+ character password). Starter content is added to empty sections.
+2. Remove `SETUP_KEY` from Render, delete `api/setup_admin.php` from the repo, redeploy.
+3. Sign in at `/admin/` and edit: Site settings, Services, Projects, Team, Process, Why choose us, Testimonials, FAQs, Navigation, News, and view Enquiries.
+4. Already created the admin earlier? Open any section in `/admin/` and click "Load starter content".
+
+## How content works
+Everything public is stored in the database (`settings`, `entries`, `posts`, `images`) and loaded from `api/content.php`. Uploaded images are optimised (WebP, max 1800px wide) and stored in the database, so they survive redeploys. Project cards show saved screenshots; the live demo only opens in a new tab and is never embedded.
 
 ## Notes
-- Enquiries are stored in the database and shown in `/admin/`. Render has no mail server, so email alerts do not send. Use an SMTP service if you need them.
-- Cover images are stored in the database (they survive redeploys).
-- News: `news.html`, RSS at `api/feed.php`.
-- Render free web services sleep when idle (about a minute to wake). Neon pauses compute when idle.
+Render has no mail server: enquiries are stored and shown in the admin. Pages are rendered in the browser, so search engines that do not run JavaScript see less. Free Render services sleep when idle.

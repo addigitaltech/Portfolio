@@ -2,8 +2,7 @@
 // RSS feed of published news.
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-$base = ($https ? 'https://' : 'http://') . preg_replace('/[^A-Za-z0-9.\-:]/', '', $_SERVER['HTTP_HOST'] ?? 'localhost');
+$base = base_url();
 $rows = db()->query('SELECT slug, title, summary, category, ' . iso('published_at') . ' AS published_at FROM posts WHERE is_published=1 ORDER BY posts.published_at DESC LIMIT 30')->fetchAll();
 $e = fn(string $s): string => htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
 header('Content-Type: application/rss+xml; charset=utf-8');

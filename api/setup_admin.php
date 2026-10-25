@@ -2,6 +2,7 @@
 // ONE-TIME: creates the first admin account, then deletes itself. Requires setup_key from config.php.
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/content_lib.php';
 header('Content-Type: text/html; charset=utf-8');
 header('X-Frame-Options: DENY');
 $msg = '';
@@ -13,6 +14,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
   elseif (strlen($p) < 12) $msg = 'Password must be at least 12 characters.';
   else {
     db()->prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)')->execute([$u, password_hash($p, PASSWORD_DEFAULT)]);
+    seed_if_empty();
     $msg = 'Admin created. Now REMOVE the SETUP_KEY environment variable and delete api/setup_admin.php from the repo. Sign in at /admin/';
   }
 }
