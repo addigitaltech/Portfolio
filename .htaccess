@@ -1,9 +1,12 @@
 Options -Indexes
+# Avoid redirects that expose the internal port (10000)
+DirectorySlash Off
 RewriteEngine On
 # Render terminates HTTPS: redirect only plain-HTTP requests
 RewriteCond %{HTTP:X-Forwarded-Proto} =http
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 RewriteRule ^sitemap\.xml$ api/sitemap.php [L]
+RewriteRule ^admin/?$ admin/index.html [L]
 # Clean URLs: /about -> about.html
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

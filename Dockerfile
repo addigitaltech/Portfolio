@@ -9,7 +9,7 @@ RUN apt-get update \
 RUN sed -ri 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf \
  && sed -ri 's/<VirtualHost \*:80>/<VirtualHost *:10000>/' /etc/apache2/sites-available/000-default.conf \
  && sed -ri 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
- && printf 'upload_max_filesize=8M\npost_max_size=10M\nmemory_limit=256M\nexpose_php=Off\n' > /usr/local/etc/php/conf.d/app.ini
+ && printf 'upload_max_filesize=8M\npost_max_size=10M\nmemory_limit=256M\nexpose_php=Off\ndisplay_errors=Off\nlog_errors=On\n' > /usr/local/etc/php/conf.d/app.ini
 COPY . /var/www/html/
 RUN rm -rf /var/www/html/sql /var/www/html/Dockerfile /var/www/html/.dockerignore /var/www/html/README.md \
  && chown -R www-data:www-data /var/www/html

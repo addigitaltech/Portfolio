@@ -1,19 +1,41 @@
 <?php
 declare(strict_types=1);
 
-function cfg(): array { static $c = null; return $c ??= require __DIR__ . '/config.php'; }
+function cfg(): array {
+  static $c = null;
+  if ($c === null) {
+    $f = __DIR__ . '/config.php';
+    $file = is_file($f) ? (array)require $f : [];
+    $env = fn(string $k, string $fk): string => (string)(getenv($k) ?: ($file[$fk] ?? ''));
+    $c = [
+      'database_url' => $env('DATABASE_URL', 'database_url'),
+      'app_secret'   => $env('APP_SECRET', 'app_secret'),
+      'setup_key'    => $env('SETUP_KEY', 'setup_key'),
+      'notify_email' => $env('NOTIFY_EMAIL', 'notify_email'),
+      'mail_from'    => $env('MAIL_FROM', 'mail_from') ?: 'no-reply@localhost',
+    ];
+  }
+  return $c;
+}
 
 function db(): PDO {
   static $pdo = null;
   if ($pdo === null) {
-    $c = cfg()['db'];
-    $pdo = new PDO("mysql:host={$c['host']};dbname={$c['name']};charset=utf8mb4", $c['user'], $c['pass'], [
+    $u = parse_url(cfg()['database_url']);
+    if (!$u || empty($u['host']) || empty($u['path'])) throw new RuntimeException('DATABASE_URL is missing or invalid');
+    $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s;sslmode=require', $u['host'], $u['port'] ?? 5432, ltrim($u['path'], '/'));
+    $pdo = new PDO($dsn, urldecode($u['user'] ?? ''), urldecode($u['pass'] ?? ''), [
       PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
       PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
       PDO::ATTR_EMULATE_PREPARES => false,
     ]);
   }
   return $pdo;
+}
+
+/** SQL fragment: timestamp column as ISO-8601 UTC text, for JSON output. */
+function iso(string $col): string {
+  return "to_char($col AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')";
 }
 
 function json_out(array $data, int $code = 200, string $cache = 'no-store'): never {
@@ -51,19 +73,19 @@ function ip_hash(): string {
 /** Returns false (and records nothing) when the limit is already reached. */
 function rate_limit(string $bucket, int $max, int $windowSec, bool $record = true): bool {
   $pdo = db(); $ip = ip_hash();
-  $st = $pdo->prepare('SELECT COUNT(*) FROM rate_limits WHERE bucket=? AND ip_hash=? AND created_at > (NOW() - (?::int * INTERVAL '1 second'))');
+  $st = $pdo->prepare("SELECT COUNT(*) FROM rate_limits WHERE bucket=? AND ip_hash=? AND created_at > (NOW() - (?::int * INTERVAL '1 second'))");
   $st->execute([$bucket, $ip, $windowSec]);
   if ((int)$st->fetchColumn() >= $max) return false;
   if ($record) {
     $pdo->prepare('INSERT INTO rate_limits (bucket, ip_hash) VALUES (?, ?)')->execute([$bucket, $ip]);
-    if (random_int(1, 50) === 1) $pdo->exec('DELETE FROM rate_limits WHERE created_at < (NOW() - INTERVAL '2 days')');
+    if (random_int(1, 50) === 1) $pdo->exec("DELETE FROM rate_limits WHERE created_at < (NOW() - INTERVAL '2 days')");
   }
   return true;
 }
 
 function start_session(): void {
   if (session_status() === PHP_SESSION_ACTIVE) return;
-  $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+  $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
   session_name('adt_admin');
   session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => $https, 'httponly' => true, 'samesite' => 'Strict']);
   session_start();

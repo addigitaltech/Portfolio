@@ -15,10 +15,6 @@ function need_csrf(): void {
   $t = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
   if (empty($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $t)) json_out(['error' => 'Session expired. Reload and sign in again.'], 403);
 }
-function slugify(string $s): string {
-  $s = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '-', $s) ?? '', '-'));
-  return $s !== '' ? mb_substr($s, 0, 120) : 'post';
-}
 
 if ($action === 'login' && $method === 'POST') {
   if (!rate_limit('login', 8, 900, false)) json_out(['error' => 'Too many attempts. Try again in 15 minutes.'], 429);
