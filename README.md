@@ -9,9 +9,10 @@ PHP 8.3 + Apache in Docker, PostgreSQL on Neon. One Render Web Service.
 Run `sql/db_setup.sql` on Neon. It only adds tables and columns and never deletes data.
 
 ## First run
+0. The first visit to the website loads starter content (services, projects, 10 blog posts) automatically.
 1. Open `/api/setup_admin.php`, enter the setup key, create the admin (12+ character password). Starter content is added to empty sections.
 2. Remove `SETUP_KEY` from Render, delete `api/setup_admin.php` from the repo, redeploy.
-3. Sign in at `/admin/` and edit: Site settings, Services, Projects, Team, Process, Why choose us, Testimonials, FAQs, Navigation, News, and view Enquiries.
+3. Sign in at `/admin/` and edit: Site settings, Services, Projects, Team, Process, Why choose us, Credentials and certificates (CAC, SMEDAN), Testimonials, FAQs, Navigation, Blog posts, and view Enquiries.
 4. Already created the admin earlier? Open any section in `/admin/` and click "Load starter content".
 
 ## How content works

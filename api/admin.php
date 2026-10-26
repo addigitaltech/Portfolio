@@ -56,7 +56,7 @@ if ($action === 'post_save' && $method === 'POST') {
   $sum = clean($d['summary'] ?? '', 300); $text = clean($d['body'] ?? '', 20000);
   $link = clean($d['link_url'] ?? '', 255); $pub = !empty($d['is_published']) ? 1 : 0;
   $cover = clean($d['cover_image'] ?? '', 255); $feat = !empty($d['is_featured']) ? 1 : 0;
-  if ($cover !== '' && !preg_match('#^api/image\.php\?f=[a-f0-9]{32}\.(jpg|png|webp)$#', $cover)) json_out(['error' => 'Invalid cover image.'], 422);
+  if ($cover !== '' && !preg_match('#^(api/image\.php\?f=[a-f0-9]{32}\.(jpg|png|webp)|assets/[A-Za-z0-9._-]+)$#', $cover)) json_out(['error' => 'Invalid cover image.'], 422);
   if ($title === '' || $sum === '' || $text === '') json_out(['error' => 'Title, summary and body are required.'], 422);
   if ($link !== '' && !preg_match('#^https?://#i', $link)) json_out(['error' => 'The link must start with http:// or https://'], 422);
   if ($id > 0) {
@@ -168,7 +168,7 @@ if ($action === 'entry_move' && $method === 'POST') {
 
 if ($action === 'seed' && $method === 'POST') {
   need_csrf();
-  json_out(['ok' => true, 'filled' => seed_if_empty()]);
+  json_out(['ok' => true, 'filled' => seed_all()]);
 }
 
 if ($action === 'post_delete' && $method === 'POST') {

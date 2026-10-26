@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blog | AD Digital Tech Agency</title>
+<meta name="description" content="Technology updates and engineering notes from AD Digital Tech Agency.">
+<link rel="icon" href="assets/favicon.png">
+<link rel="alternate" type="application/rss+xml" title="AD Digital Tech blog" href="api/feed.php">
+<link rel="stylesheet" href="assets/site.css"></head>
+<body data-page="blog">
+<a class="skip" href="#app">Skip to content</a>
+<header id="hdr"></header>
+<main id="app"><section class="s"><div class="w">
+<div id="listv"><h1>Blog</h1><p class="lead">Technology updates and practical engineering notes.</p><p class="lead"><a href="api/feed.php">RSS feed</a></p>
+<div class="filters" id="chips" role="group" aria-label="Filter by category"></div>
+<div class="ng" id="grid"></div><p class="empty" id="state">Loading...</p>
+<p style="text-align:center"><button class="btn o" id="more" type="button" hidden>Load more</button></p></div>
+<article class="art" id="artv" hidden></article></div></section></main>
+<footer id="ftr"></footer>
+<script src="assets/news.js" defer></script>
+<script src="assets/app.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+var Q=new URLSearchParams(location.search),slug=Q.get('s'),cat=Q.get('c')||'',off=0,L=9,A=ADNews,$=function(i){return document.getElementById(i)};
+function api(q){return fetch('api/posts.php?'+q).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'x');return j})})}
+function chips(cs){var c=$('chips');c.textContent='';[''].concat(cs).forEach(function(n){var b=document.createElement('button');b.type='button';b.textContent=n||'All';b.setAttribute('aria-pressed',n===cat);b.onclick=function(){location.search=n?'?c='+encodeURIComponent(n):''};c.appendChild(b)})}
+function list(){$('artv').hidden=true;api('limit='+L+'&offset='+off+(cat?'&category='+encodeURIComponent(cat):'')).then(function(j){
+if(!off)chips(j.categories||[]);var g=$('grid');j.posts.forEach(function(p,i){g.appendChild(A.card(p,!off&&i===0&&!cat))});off+=j.posts.length;
+$('state').textContent=off?'':'No posts published yet.';$('more').hidden=off>=j.total}).catch(function(){$('state').textContent='The blog is unavailable right now. Please try again later.'})}
+function article(){$('listv').hidden=true;var a=$('artv');a.hidden=false;api('slug='+encodeURIComponent(slug)).then(function(j){var p=j.post;document.title=p.title+' | AD Digital Tech Agency';
+var d=document.querySelector('meta[name=description]');if(d)d.content=p.summary;
+var back=A.el('a','\u2190 All posts');back.href='blog.html';a.appendChild(back);var tg=A.el('div',p.category,'tag');tg.style.marginTop='24px';a.appendChild(tg);a.appendChild(A.el('h1',p.title));
+a.appendChild(A.el('time',A.fmt(p.published_at),'mut'));var im=A.cover(p);if(im)a.appendChild(im);
+String(p.body).split(/\n{2,}/).forEach(function(x){if(x.trim())a.appendChild(A.el('p',x.trim()))});
+if(p.link_url&&/^https?:\/\//i.test(p.link_url)){var l=A.el('a','Read the source','btn p');l.href=p.link_url;l.target='_blank';l.rel='noopener noreferrer';a.appendChild(l)}}).catch(function(){a.appendChild(A.el('p','This story could not be found.','empty'));var b=A.el('a','Back to news');b.href='blog.html';a.appendChild(b)})}
+$('more').onclick=list;if(slug)article();else list();
+});
+</script>
+</body></html>

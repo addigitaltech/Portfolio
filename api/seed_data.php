@@ -4,7 +4,7 @@ return [
   'nav' => [
     ['label' => 'Home', 'url' => '/'], ['label' => 'About', 'url' => '/about'], ['label' => 'Services', 'url' => '/services'],
     ['label' => 'Our Work', 'url' => '/work'], ['label' => 'Team', 'url' => '/team'], ['label' => 'Process', 'url' => '/process'],
-    ['label' => 'News', 'url' => '/news.html'], ['label' => 'Contact', 'url' => '/contact'],
+    ['label' => 'Blog', 'url' => '/blog'], ['label' => 'Contact', 'url' => '/contact'],
   ],
   'services' => [
     ['title' => 'Business and Corporate Website Development', 'summary' => 'Professional websites that present your business clearly and earn trust.',

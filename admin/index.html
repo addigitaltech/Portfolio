@@ -52,7 +52,7 @@ getters[f.k]=function(){return list};wrap.appendChild(box2);wrap.appendChild(fi2
 else{var inp=el('input',null,null,{id:id,type:'text'});inp.value=vals[f.k]||'';if(f.def&&!vals[f.k])inp.placeholder=f.def;getters[f.k]=function(){return inp.value};wrap.appendChild(inp)}}
 root.appendChild(wrap)});
 return{root:root,get:function(){var o={};for(var k in getters)o[k]=getters[k]();return o}}}
-function tabs(active){var t=$('tabs');t.textContent='';var items=[['settings','Site settings']];Object.keys(SC.collections).forEach(function(k){items.push([k,SC.collections[k].label])});items.push(['news','News posts'],['enq','Enquiries']);
+function tabs(active){var t=$('tabs');t.textContent='';var items=[['settings','Site settings']];Object.keys(SC.collections).forEach(function(k){items.push([k,SC.collections[k].label])});items.push(['news','Blog posts'],['enq','Enquiries']);
 items.forEach(function(i){var b=el('button',i[1],i[0]===active?'on':'');b.onclick=function(){show(i[0])};t.appendChild(b)})}
 function show(s){say('');tabs(s);var v=$('view');v.textContent='';if(s==='settings')viewSettings(v);else if(s==='news')viewNews(v);else if(s==='enq')viewEnq(v);else viewColl(v,s)}
 function viewSettings(v){call('settings_get').then(function(r){var forms=[];Object.keys(SC.settings).forEach(function(g){var fs=el('fieldset');fs.appendChild(el('legend',g));var f=buildForm(SC.settings[g],r.settings);forms.push(f);fs.appendChild(f.root);v.appendChild(fs)});
@@ -71,7 +71,7 @@ var bar=el('div');[['Edit',function(){edit(en)}],['Move up',function(){mv(en,'up
 var d=el('button','Delete','d');d.onclick=function(){if(confirm('Delete "'+t+'"? This cannot be undone.'))call('entry_delete','POST',{c:c,id:en.id}).then(load).catch(function(x){say(x.message,'err')})};bar.appendChild(d);card.appendChild(bar);list.appendChild(card)})}).catch(function(x){say(x.message,'err')})}
 function mv(en,dir){call('entry_move','POST',{c:c,id:en.id,dir:dir}).then(load).catch(function(x){say(x.message,'err')})}
 add.onclick=function(){edit(null)};load()}
-function viewNews(v){v.appendChild(el('h2','News posts'));var fields=[{k:'title',l:'Title',t:'text',req:1},{k:'category',l:'Category (e.g. Technology, AI, Software)',t:'text'},{k:'summary',l:'Short summary (max 300)',t:'textarea'},{k:'body',l:'Story (blank line between paragraphs)',t:'textarea'},{k:'link_url',l:'Source link (optional)',t:'url'},{k:'cover_image',l:'Cover image',t:'image'}];
+function viewNews(v){v.appendChild(el('h2','Blog posts'));var fields=[{k:'title',l:'Title',t:'text',req:1},{k:'category',l:'Category (e.g. Technology, AI, Software)',t:'text'},{k:'summary',l:'Short summary (max 300)',t:'textarea'},{k:'body',l:'Story (blank line between paragraphs)',t:'textarea'},{k:'link_url',l:'Source link (optional)',t:'url'},{k:'cover_image',l:'Cover image',t:'image'}];
 var f=buildForm(fields,{}),card=el('div','','card'),pid=0;card.appendChild(f.root);
 var pc=el('input',null,null,{type:'checkbox'}),fc=el('input',null,null,{type:'checkbox'});var l1=el('label',' Published');l1.insertBefore(pc,l1.firstChild);var l2=el('label',' Featured (top story)');l2.insertBefore(fc,l2.firstChild);card.appendChild(l1);card.appendChild(l2);
 var sv=el('button','Save post','p');card.appendChild(sv);v.appendChild(card);var list=el('div');v.appendChild(list);

@@ -15,7 +15,7 @@ function arr(x) { return Array.isArray(x) ? x : []; }
 function paras(t) { return String(t || '').split(/\n{2,}/).filter(function (x) { return x.trim(); }).map(function (x) { return h('p', { text: x.trim() }); }); }
 function chips(l) { l = arr(l); return l.length ? h('ul', { class: 'chips' }, l.map(function (x) { return h('li', { text: x }); })) : null; }
 function sec(cls, kids) { return h('section', { class: 's ' + (cls || '') }, [h('div', { class: 'w' }, kids)]); }
-function head(title, text) { return h('div', { class: 'sh' }, [h('h2', { text: title }), text ? h('p', { class: 'lead', text: text }) : null]); }
+function head(title, text, eye) { return h('div', { class: 'sh' }, [eye ? h('p', { class: 'eyebrow', text: eye }) : null, h('h2', { text: title }), text ? h('p', { class: 'lead', text: text }) : null]); }
 function btn(txt, href, cls, ext) { return h('a', { class: 'btn ' + (cls || 'p'), href: safe(href), target: ext ? '_blank' : null, rel: ext ? 'noopener noreferrer' : null, text: txt }); }
 var S = {}, C = {};
 
@@ -42,7 +42,7 @@ function chrome() {
   D.documentElement.dataset.theme = S.theme === 'dark' ? 'dark' : 'light';
   if (/^#[0-9a-f]{6}$/i.test(S.brand_color)) D.documentElement.style.setProperty('--blue', S.brand_color);
   meta('link[rel="icon"]', 'href', S.favicon && IMG.test(S.favicon) ? S.favicon : 'assets/favicon.png');
-  var nav = arr(C.nav).length ? C.nav : [{ label: 'Home', url: '/' }, { label: 'Services', url: '/services' }, { label: 'Our Work', url: '/work' }, { label: 'Contact', url: '/contact' }];
+  var nav = arr(C.nav).length ? C.nav : [{ label: 'Home', url: '/' }, { label: 'Services', url: '/services' }, { label: 'Our Work', url: '/work' }, { label: 'Blog', url: '/blog' }, { label: 'Contact', url: '/contact' }];
   var path = location.pathname.replace(/\/$/, '').replace(/\.html$/, '') || '/';
   var ul = h('ul', {}, nav.map(function (n) { var u = safe(n.url), cur = u.replace(/\.html$/, '') === path; return h('li', {}, [h('a', { href: u, 'aria-current': cur ? 'page' : null, text: n.label })]); }));
   var navEl = h('nav', { id: 'nav', 'aria-label': 'Main' }, [ul]);
@@ -50,6 +50,12 @@ function chrome() {
   mb.onclick = function () { var o = navEl.classList.toggle('open'); mb.setAttribute('aria-expanded', o); };
   var hd = D.getElementById('hdr'); hd.textContent = '';
   hd.appendChild(h('div', { class: 'w' }, [h('a', { class: 'logo', href: '/', 'aria-label': S.company_name + ' home' }, [img(logoSrc(), S.company_name + ' logo', 126, 42, true)]), navEl, btn(S.cta_primary_text, S.cta_primary_url, 'p cta'), mb]));
+  var oldwa = D.querySelector('.wa'); if (oldwa) oldwa.remove();
+  if (S.whatsapp) {
+    var wa = h('a', { class: 'wa', href: 'https://wa.me/' + S.whatsapp.replace(/\D/g, '') + '?text=' + enc(S.whatsapp_message || ''), target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Chat with us on WhatsApp' });
+    wa.innerHTML = '<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path fill="#fff" d="M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.8 2 6.8L3.2 29l6.6-1.7c1.9 1 4 1.6 6.2 1.6 7.2 0 13-5.7 13-12.8S23.200 3 16 3zm0 23.300c-2 0-3.900-.6-5.600-1.600l-.4-.2-3.900 1 1-3.800-.3-.4A10.300 10.300 0 0 1 5.600 15.800C5.600 10.200 10.300 5.600 16 5.600s10.400 4.600 10.400 10.200S21.700 26.300 16 26.300z"/><path fill="#fff" d="M21.800 18.700c-.3-.2-1.800-.9-2.100-1-.3-.1-.5-.2-.7.200l-.9 1.100c-.2.200-.3.200-.6.100-1.800-.9-3-1.600-4.100-3.500-.3-.5.300-.5.900-1.500.1-.2 0-.4 0-.5l-1-2.300c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.400-.3.300-1.100 1.100-1.100 2.600s1.100 3 1.300 3.200c.2.200 2.200 3.400 5.400 4.700 2 .8 2.800.9 3.800.7.600-.1 1.800-.7 2.100-1.500.3-.7.300-1.300.2-1.500-.1-.1-.3-.2-.6-.3z"/></svg><span>Chat on WhatsApp</span>';
+    D.body.appendChild(wa);
+  }
   var soc = [['social_linkedin', 'LinkedIn'], ['social_facebook', 'Facebook'], ['social_instagram', 'Instagram'], ['social_x', 'X'], ['social_github', 'GitHub'], ['social_youtube', 'YouTube']].filter(function (s) { return S[s[0]]; });
   var ft = D.getElementById('ftr'); ft.textContent = ''; ft.className = 'site';
   ft.appendChild(h('div', { class: 'w' }, [
@@ -78,7 +84,7 @@ function pcard(p) {
 }
 function scard(s) { return h('a', { class: 'card', href: '/service?s=' + enc(s.slug) }, [h('h3', { text: s.title }), h('p', { text: s.summary })]); }
 function steps(list) { return h('ol', { class: 'steps' }, list.map(function (x) { return h('li', {}, [h('h3', { text: x.title }), x.description ? h('p', { text: x.description }) : null]); })); }
-function tcard(m) { return h('article', { class: 'card tm' }, [img(m.photo, m.photo_alt || m.name, 400, 400) || h('div', { class: 'ph', text: m.name.charAt(0) }), h('h3', { text: m.name }), h('p', { text: m.role }), m.bio ? h('p', { text: m.bio, style: 'margin-top:8px' }) : null, h('div', { style: 'margin-top:10px' }, [chips(m.skills)]),
+function tcard(m) { return h('article', { class: 'card tm' }, [img(m.photo, m.photo_alt || m.name, 400, 400) || h('div', { class: 'ph', text: m.name.charAt(0) }), h('h3', { text: m.name }), h('p', { text: m.role }), m.qualifications ? h('p', { text: m.qualifications, style: 'margin-top:6px;font-size:.85rem' }) : null, m.bio ? h('p', { text: m.bio, style: 'margin-top:8px' }) : null, h('div', { style: 'margin-top:10px' }, [chips(m.skills)]),
   h('p', { style: 'margin-top:10px' }, [['linkedin', 'LinkedIn'], ['github', 'GitHub'], ['website', 'Website']].filter(function (l) { return m[l[0]]; }).map(function (l) { return h('a', { href: safe(m[l[0]]), target: '_blank', rel: 'noopener noreferrer', text: l[1], style: 'margin-right:12px' }); }))]); }
 function faqs() { var f = arr(C.faqs); return f.length ? sec('soft', [head('Frequently asked questions')].concat(f.map(function (x) { return h('details', { class: 'faq' }, [h('summary', { text: x.question }), h('p', { text: x.answer })]); }))) : null; }
 function cta() { return h('section', { class: 'band' }, [h('div', { class: 'w' }, [h('h2', { text: S.contact_cta_title }), h('p', { text: S.contact_cta_text }), btn(S.cta_primary_text, S.cta_primary_url, 'p')])]); }
@@ -86,27 +92,36 @@ function banner(title, text) { return h('section', { class: 'hero', style: 'padd
 function empty(t) { return h('p', { class: 'empty', text: t }); }
 
 var P = {};
+function ccard(c) { var im = img(c.image, c.image_alt || c.title, 600, 420); return h('article', { class: 'card cc' }, [im ? h('div', { class: 'cimg' }, [im]) : null, h('h3', { text: c.title }), c.issuer ? h('p', { text: 'Issued by ' + c.issuer }) : null, c.reference ? h('p', { text: 'Reference: ' + c.reference }) : null, c.description ? h('p', { text: c.description }) : null]); }
 P.home = function () {
-  var svc = arr(C.services), prj = arr(C.projects), feat = prj.filter(function (p) { return p.featured; }); if (!feat.length) feat = prj.slice(0, 3);
+  var svc = arr(C.services), prj = arr(C.projects), cred = arr(C.credentials), feat = prj.filter(function (p) { return p.featured; }); if (!feat.length) feat = prj.slice(0, 3);
   var hero = h('section', { class: 'hero' }, [h('div', { class: 'w g' }, [
-    h('div', {}, [h('h1', { text: S.hero_title }), h('p', { class: 'lead', text: S.hero_text }), h('div', { class: 'row' }, [btn(S.cta_primary_text, S.cta_primary_url, 'p'), btn(S.cta_secondary_text, S.cta_secondary_url, 'w2')])]),
-    img(S.hero_image, S.hero_image_alt, 700, 520, true) || h('div', { class: 'panel' }, [h('h3', { text: 'What we build' }), h('ul', {}, (svc.length ? svc.slice(0, 5).map(function (x) { return x.title; }) : ['Websites', 'Web applications', 'School systems']).map(function (t) { return h('li', { text: t }); }))])])]);
-  var out = [hero, sec('', [h('div', { class: 'two' }, [h('div', {}, [h('h2', { text: S.intro_title }), h('p', { class: 'lead', text: S.intro_text })]), arr(S.industries).length ? h('div', {}, [h('h3', { text: 'Who we serve' }), chips(S.industries)]) : null])])];
-  if (svc.length) out.push(sec('soft', [head('Our services'), h('div', { class: 'grid' }, svc.map(scard)), h('p', { style: 'margin-top:22px' }, [btn('All services', '/services', 'o')])]));
-  if (feat.length) out.push(sec('', [head('Selected projects', 'Previews are saved screenshots, so they are always available.'), h('div', { class: 'grid w3' }, feat.map(pcard)), h('p', { style: 'margin-top:22px' }, [btn('See all projects', '/work', 'o')])]));
-  if (arr(C.process).length) out.push(sec('soft', [head('How we work'), steps(C.process)]));
-  if (arr(C.why).length) out.push(sec('', [head('Why choose us'), h('div', { class: 'grid' }, C.why.map(function (x) { return h('div', { class: 'card' }, [h('h3', { text: x.title }), h('p', { text: x.text })]); }))]));
-  if (arr(C.team).length) out.push(sec('soft', [head('Our team'), h('div', { class: 'grid' }, C.team.slice(0, 4).map(tcard)), h('p', { style: 'margin-top:22px' }, [btn('Meet the team', '/team', 'o')])]));
-  if (arr(C.testimonials).length) out.push(sec('', [head('What clients say'), h('div', { class: 'grid' }, C.testimonials.map(function (t) { return h('blockquote', { class: 'card quote', style: 'margin:0' }, [h('p', { text: '\u201C' + t.quote + '\u201D', style: 'color:inherit;font-size:1.02rem' }), h('footer', { text: '\u2014 ' + t.author + (t.role ? ', ' + t.role : '') })]); }))]));
-  out.push(cta()); return out;
+    h('div', {}, [h('p', { class: 'eyebrow lt', text: 'Software development company' }), h('h1', { text: S.hero_title }), h('p', { class: 'lead', text: S.hero_text }), h('div', { class: 'row' }, [btn(S.cta_primary_text, S.cta_primary_url, 'p'), btn(S.cta_secondary_text, S.cta_secondary_url, 'w2')])]),
+    img(S.hero_image, S.hero_image_alt, 700, 520, true) || h('div', { class: 'panel' }, [h('h3', { text: 'What we build' }), h('ul', {}, (svc.length ? svc.slice(0, 6).map(function (x) { return x.title; }) : ['Websites', 'Web applications', 'School systems']).map(function (t) { return h('li', { text: t }); }))])])]);
+  var out = [hero];
+  if (arr(S.technologies).length) out.push(h('section', { class: 'strip' }, [h('div', { class: 'w' }, [h('p', { class: 'strip-l', text: 'Technologies we work with' }), chips(S.technologies)])]));
+  if (cred.length) out.push(sec('', [head('Registered and certified', 'Our official registrations and certificates.', 'Credentials'), h('div', { class: 'grid' }, cred.map(ccard))]));
+  out.push(sec('', [h('div', { class: 'two' }, [h('div', {}, [h('p', { class: 'eyebrow', text: 'Who we are' }), h('h2', { text: S.intro_title }), h('p', { class: 'lead', text: S.intro_text })]), arr(S.industries).length ? h('div', { class: 'card' }, [h('h3', { text: 'Who we serve' }), chips(S.industries)]) : null])]));
+  if (svc.length) out.push(sec('soft', [head('Our services', 'Everything from the first design to deployment and support.', 'What we do'), h('div', { class: 'grid' }, svc.map(scard)), h('p', { style: 'margin-top:24px' }, [btn('All services', '/services', 'o')])]));
+  if (feat.length) out.push(sec('', [head('Selected projects', 'Previews are saved screenshots, so they are always available.', 'Our work'), h('div', { class: 'grid w3' }, feat.map(pcard)), h('p', { style: 'margin-top:24px' }, [btn('See all projects', '/work', 'o')])]));
+  if (arr(C.process).length) out.push(sec('soft', [head('How we work', 'A clear process from idea to a supported live system.', 'Our process'), steps(C.process)]));
+  if (arr(C.why).length) out.push(sec('', [head('Why choose us', '', 'Why us'), h('div', { class: 'grid' }, C.why.map(function (x) { return h('div', { class: 'card' }, [h('h3', { text: x.title }), h('p', { text: x.text })]); }))]));
+  if (arr(C.team).length) out.push(sec('soft', [head('Our team', '', 'The people'), h('div', { class: 'grid' }, C.team.slice(0, 4).map(tcard)), h('p', { style: 'margin-top:24px' }, [btn('Meet the team', '/team', 'o')])]));
+  if (arr(C.testimonials).length) out.push(sec('', [head('What clients say', '', 'Testimonials'), h('div', { class: 'grid' }, C.testimonials.map(function (t) { return h('blockquote', { class: 'card quote', style: 'margin:0' }, [h('p', { text: '\u201C' + t.quote + '\u201D', style: 'color:inherit;font-size:1.02rem' }), h('footer', { text: '\u2014 ' + t.author + (t.role ? ', ' + t.role : '') })]); }))]));
+  var bl = h('section', { class: 's soft', hidden: true }), blg = h('div', { class: 'ng' });
+  bl.appendChild(h('div', { class: 'w' }, [head('Latest from our blog', 'Technology updates and practical engineering notes.', 'Blog'), blg, h('p', { style: 'margin-top:24px' }, [btn('Read the blog', '/blog', 'o')])]));
+  fetch('api/posts.php?limit=3').then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) { if (!j.posts || !j.posts.length || !window.ADNews) return; j.posts.forEach(function (p) { blg.appendChild(ADNews.card(p, false)); }); bl.hidden = false; }).catch(function () {});
+  out.push(bl, cta()); return out;
 };
 P.about = function () {
-  var out = [banner('About ' + S.company_name, S.tagline), sec('', [h('div', { class: 'two' }, [h('div', {}, [h('h2', { text: 'Company overview' })].concat(paras(S.about_overview))), h('div', {}, [h('div', { class: 'card', style: 'margin-bottom:16px' }, [h('h3', { text: 'Mission' }), h('p', { text: S.mission })]), h('div', { class: 'card' }, [h('h3', { text: 'Vision' }), h('p', { text: S.vision })])])])])];
-  if (arr(S.values).length) out.push(sec('soft', [head('Our values'), h('div', { class: 'grid' }, S.values.map(function (v) { var p = v.split('|'); return h('div', { class: 'card' }, [h('h3', { text: p[0].trim() }), p[1] ? h('p', { text: p.slice(1).join('|').trim() }) : null]); }))]));
-  out.push(sec('', [head('Our approach'), h('div', { style: 'max-width:760px' }, paras(S.approach))]));
-  out.push(sec('soft', [h('div', { class: 'two' }, [img(S.founder_photo, S.founder_name + ', ' + S.founder_role, 480, 600) ? h('div', {}, [img(S.founder_photo, S.founder_name + ', ' + S.founder_role, 480, 600)]) : null, h('div', {}, [h('h2', { text: S.founder_name }), h('p', { class: 'mut', text: S.founder_role }), h('p', { text: S.founder_bio })])])]));
+  var cred = arr(C.credentials), out = [banner('About ' + S.company_name, S.tagline), sec('', [h('div', { class: 'two' }, [h('div', {}, [h('h2', { text: 'Company overview' })].concat(paras(S.about_overview))), h('div', {}, [h('div', { class: 'card', style: 'margin-bottom:16px' }, [h('h3', { text: 'Mission' }), h('p', { text: S.mission })]), h('div', { class: 'card' }, [h('h3', { text: 'Vision' }), h('p', { text: S.vision })])])])])];
+  if (arr(S.values).length) out.push(sec('soft', [head('Our values', '', 'What guides us'), h('div', { class: 'grid' }, S.values.map(function (v) { var p = v.split('|'); return h('div', { class: 'card' }, [h('h3', { text: p[0].trim() }), p[1] ? h('p', { text: p.slice(1).join('|').trim() }) : null]); }))]));
+  out.push(sec('', [head('Our approach', '', 'How we build'), h('div', { style: 'max-width:760px' }, paras(S.approach))]));
+  var fp = img(S.founder_photo, S.founder_name + ', ' + S.founder_role, 480, 600);
+  out.push(sec('soft', [h('div', { class: 'two' }, [fp ? h('div', {}, [fp]) : null, h('div', {}, [h('p', { class: 'eyebrow', text: 'Founder' }), h('h2', { text: S.founder_name }), h('p', { class: 'mut', text: S.founder_role }), h('p', { text: S.founder_bio })])])]));
+  if (cred.length) out.push(sec('', [head('Credentials and certificates', 'Our official registrations.', 'Credentials'), h('div', { class: 'grid' }, cred.map(ccard))]));
   if (arr(S.history).length) out.push(sec('', [head('Milestones'), h('ul', { class: 'tl' }, S.history.map(function (x) { var p = x.split('|'); return h('li', {}, [h('strong', { text: p.length > 1 ? p[0].trim() : '' }), h('p', { text: (p.length > 1 ? p.slice(1).join('|') : x).trim() })]); }))]));
-  if (arr(C.team).length) out.push(sec('soft', [head('The team'), h('div', { class: 'grid' }, C.team.map(tcard))]));
+  if (arr(C.team).length) out.push(sec('soft', [head('The team', '', 'The people'), h('div', { class: 'grid' }, C.team.map(tcard))]));
   out.push(cta()); return out;
 };
 P.services = function () {
@@ -184,17 +199,17 @@ function boot() {
     try {
       chrome();
       var app = D.getElementById('app');
-      if (PAGE !== 'news' && P[PAGE]) {
+      if (PAGE !== 'blog' && P[PAGE]) {
         var pre = (PAGE === 'service' || PAGE === 'project') ? null : { home: [null, S.seo_description], about: ['About us', S.mission], services: ['Services', 'Software development services'], work: ['Our work', 'Projects and case studies'], team: ['Our team', ''], process: ['Our process', ''], contact: ['Contact us', 'Start a project with ' + S.company_name] }[PAGE];
         if (pre) seo(pre[0], pre[1]);
         app.textContent = ''; P[PAGE]().forEach(function (n) { if (n) app.appendChild(n); });
-      } else if (PAGE === 'news') seo('Technology news', 'Technology news and engineering updates from ' + S.company_name);
+      } else if (PAGE === 'blog') seo('Blog', 'Technology updates and engineering notes from ' + S.company_name);
       D.dispatchEvent(new Event('adready'));
     } catch (e) { console.error(e); }
   };
   load().then(function (d) { C = d; S = d.settings || {}; done(); }).catch(function () {
     S = { company_name: 'AD Digital Tech Agency', theme: 'light', footer_text: '\u00A9 {year} AD Digital Tech Agency', cta_primary_text: 'Contact us', cta_primary_url: '/contact', description: '', seo_title: 'AD Digital Tech Agency', seo_description: '' };
-    done(); if (PAGE !== 'news') { var a = D.getElementById('app'); a.textContent = ''; a.appendChild(empty('Content is temporarily unavailable. Please try again shortly.')); }
+    done(); if (PAGE !== 'blog') { var a = D.getElementById('app'); a.textContent = ''; a.appendChild(empty('Content is temporarily unavailable. Please try again shortly.')); }
   });
 }
 window.ADApp = { ready: function (cb) { D.addEventListener('adready', cb, { once: true }); } };

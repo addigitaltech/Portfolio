@@ -30,6 +30,7 @@ function content_schema(): array {
         F('intro_title', 'Company introduction heading', 'text', ['def' => 'A software development company']),
         F('intro_text', 'Company introduction text', 'textarea', ['def' => 'AD Digital Tech Agency builds full-stack websites, web applications and digital systems. We work with schools, businesses and organisations that need dependable software, from the first design to deployment and support.']),
         F('industries', 'Industries we serve (one per line)', 'lines', ['def' => ['Schools and education', 'Businesses and corporate organisations', 'Startups', 'NGOs and non-profit organisations']]),
+        F('technologies', 'Technologies we work with (one per line)', 'lines', ['def' => ['Laravel', 'PHP', 'React', 'Next.js', 'Vue', 'TypeScript', 'Node.js', 'PostgreSQL', 'MySQL', 'Docker', 'Paystack', 'Flutterwave']]),
         F('contact_cta_title', 'Closing call-to-action heading', 'text', ['def' => 'Have a project in mind?']),
         F('contact_cta_text', 'Closing call-to-action text', 'textarea', ['def' => 'Tell us what you need and we will respond with the next steps.']),
       ],
@@ -47,7 +48,8 @@ function content_schema(): array {
       ],
       'Contact and social' => [
         F('contact_email', 'Business email', 'text', ['def' => 'info@addigitaltech.com.ng']),
-        F('whatsapp', 'WhatsApp number (digits with country code, e.g. 234...)', 'text', ['max' => 20]),
+        F('whatsapp', 'WhatsApp number (digits with country code, e.g. 234...)', 'text', ['max' => 20, 'def' => '2349066263211']),
+        F('whatsapp_message', 'WhatsApp opening message', 'text', ['def' => 'Hello AD Digital Tech Agency, I would like to discuss a project.']),
         F('phone', 'Phone number (optional)', 'text', ['max' => 30]),
         F('address', 'Office address (optional)', 'textarea', ['max' => 300]),
         F('social_linkedin', 'LinkedIn link', 'url'),
@@ -99,7 +101,8 @@ function content_schema(): array {
         F('photo', 'Photograph', 'image'),
         F('photo_alt', 'Photo description (for accessibility)', 'text'),
         F('bio', 'Short biography', 'textarea', ['max' => 800]),
-        F('skills', 'Skills (one per line)', 'lines'),
+        F('skills', 'Skills and abilities (one per line)', 'lines'),
+        F('qualifications', 'Qualifications or certifications (only if genuine)', 'text'),
         F('linkedin', 'LinkedIn link', 'url'),
         F('github', 'GitHub link', 'url'),
         F('website', 'Website link', 'url'),
@@ -111,6 +114,14 @@ function content_schema(): array {
       'why' => ['label' => 'Why choose us', 'one' => 'reason', 'title' => 'title', 'slug' => false, 'fields' => [
         F('title', 'Heading', 'text', ['req' => 1]),
         F('text', 'Text', 'textarea', ['max' => 500]),
+      ]],
+      'credentials' => ['label' => 'Credentials and certificates', 'one' => 'credential', 'title' => 'title', 'slug' => false, 'fields' => [
+        F('title', 'Credential name (e.g. CAC registration, SMEDAN certificate)', 'text', ['req' => 1, 'max' => 120]),
+        F('issuer', 'Issued by', 'text'),
+        F('reference', 'Registration or certificate number (optional)', 'text'),
+        F('description', 'Short description', 'textarea', ['max' => 400]),
+        F('image', 'Certificate image or scan', 'image'),
+        F('image_alt', 'Image description (for accessibility)', 'text'),
       ]],
       'testimonials' => ['label' => 'Testimonials', 'one' => 'testimonial', 'title' => 'author', 'slug' => false, 'fields' => [
         F('quote', 'Quote (only genuine, approved testimonials)', 'textarea', ['req' => 1, 'max' => 800]),
@@ -236,5 +247,22 @@ function seed_if_empty(): array {
     foreach ($items as $i => $item) insert_entry($c, validate_fields($def['fields'], $item), 1, ($i + 1) * 10);
     $filled[] = $c;
   }
+  return $filled;
+}
+
+function seed_posts_if_empty(): bool {
+  if ((int)db()->query('SELECT COUNT(*) FROM posts')->fetchColumn() > 0) return false;
+  $posts = require __DIR__ . '/seed_posts.php';
+  $ins = db()->prepare('INSERT INTO posts (slug, title, category, summary, body, cover_image, is_featured, is_published, published_at) VALUES (?,?,?,?,?,?,?,1,?)');
+  $now = time();
+  foreach ($posts as $i => $p) {
+    $ins->execute([slugify($p['title']), $p['title'], $p['category'], $p['summary'], $p['body'], $p['cover'], $p['featured'], gmdate('Y-m-d H:i:s', $now - $i * 3600)]);
+  }
+  return true;
+}
+
+function seed_all(): array {
+  $filled = seed_if_empty();
+  if (seed_posts_if_empty()) $filled[] = 'posts';
   return $filled;
 }
